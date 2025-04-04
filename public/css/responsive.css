@@ -1,0 +1,110 @@
+@media (max-width: 991.98px) {
+    /* Adjust navbar padding on mobile */
+    .nav-link, .navbar-toggler  {
+        color: white;
+    }
+
+    #main-header.scrolled .nav-link, #main-header.scrolled .navbar-toggler,
+     #main-header:hover .nav-link, #main-header:hover .navbar-toggler {
+        color: black;
+    }
+
+    #main-header .navbar {
+        
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    /* Center the navbar toggler */
+    .navbar-toggler {
+        
+        border: none;
+        
+    }
+    
+    /* Ensure proper spacing in collapsed menu */
+    #navbarContent {
+        margin-top: 1rem;
+    }
+    
+    /* Adjust nav links in mobile view */
+    #main-header .navbar-nav .nav-link {
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+    
+    /* Style navbar brand in mobile view */
+    #main-header .navbar-brand {
+        font-size: 1.5rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        padding-left: 30%;
+    }
+    
+    /* Adjust search bar in mobile view */
+    .search-bar {
+        opacity: 1;
+        pointer-events: auto;
+        padding-left: 100px;
+        transform: none;
+        display: none;
+    }
+    
+    .search-bar.active {
+        display: block;
+    }
+
+    .search-bar button{
+        padding-right: 30px;
+    }
+    
+    /* Side cart adjustments for mobile */
+    .side-cart-panel {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+
+/* Make cart items responsive */
+.cart-item {
+    flex-wrap: wrap;
+}
+
+.cart-item-image {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: cover;
+}
+
+@media (max-width: 576px) {
+    .side-cart-panel {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .cart-item-details {
+        flex: 1 0 calc(100% - 100px);
+    }
+    
+    .cart-item-price {
+        flex: 0 0 100%;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Ensure responsive spacing across devices */
+
+
+@media (min-width: 992px) {
+    .navbar-nav .navbar-item {
+        margin: 0 1rem;
+    }
+}
+
+/* Toggle search on click for mobile */
+@media (max-width: 991.98px) {
+    #search-toggle {
+        cursor: pointer;
+    }
+}
