@@ -17,9 +17,19 @@ switch ($page) {
     case 'product':
         require_once BASE_PATH . '/app/views/product.php';
         break;
+    case 'productDetail':
+        require_once BASE_PATH . '/app/views/productDetail.php';
+        break;
+    case 'contact':
+        require_once BASE_PATH . '/app/views/contact.php';
+        break;
+    case 'payment':
+        require_once BASE_PATH . '/app/views/payment.php';
+        break;
     case 'authentication':
         require_once BASE_PATH . '/app/views/authentication.php';
         break;
+    
     case 'logout':
         session_destroy();
         header("Location: " . BASE_URL . "/index.php");

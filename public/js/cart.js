@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCartDisplay();
 });
 
+
+
 function initCart() {
     const cartToggleDesktop = document.getElementById('cart-toggle-desktop');
     const cartToggleMobile = document.getElementById('cart-toggle-mobile');
@@ -165,7 +167,7 @@ function updateCartDisplay() {
                     </div>
                 </div>
                 <div class="cart-item-price ms-auto">
-                    ${item.price} VND
+                    ${new Intl.NumberFormat('vi-VN').format(item.price)} VNĐ
                 </div>
             `;
             cartItems.appendChild(cartItem);
@@ -176,7 +178,7 @@ function updateCartDisplay() {
     });
     
     if (cartTotal) {
-        cartTotal.textContent = total;
+        cartTotal.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' VNĐ';
     }
     
     updateCartCountElements(count);
@@ -206,22 +208,84 @@ function updateCartCountElements(count) {
 }
 
 function syncCartWithServer(cart) {
+    return fetch('/mywebsite/app/controllers/CartController.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'sync',
+            cart: cart
+        }),
+        credentials: 'include' // This ensures cookies/session are sent
+    })
+    .then(response => response.json())
+    .then(data => {
+        // If the server returned an updated cart (e.g. after merging with DB items)
+        if (data.cart) {
+            localStorage.setItem('cart', JSON.stringify(data.cart));
+            renderCart(); // Re-render with the merged cart
+        }
+        return data;
+    })
+    .catch(error => {
+        console.error('Error syncing cart:', error);
+    });
+}
+
+// Call this function after login
+// Add this to your cart.js file
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we need to merge carts
+    fetch('/mywebsite/app/controllers/CartController.php?action=get_cart', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.cart) {
+            // Store the server cart in localStorage
+            localStorage.setItem('cart', JSON.stringify(data.cart));
+            
+            // Update cart display
+            renderCart();
+        }
+    })
+    .catch(error => {
+        console.error('Error checking cart:', error);
+    });
+});
+
+// Add this function to cart.js for explicit merging after login
+function mergeCartsAfterLogin() {
+    // Get cart from localStorage
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    // Send it to server for merging
     fetch('/mywebsite/app/controllers/CartController.php', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ action: 'updateCart', cart: cart })
+        body: JSON.stringify({
+            action: 'mergeCartsAfterLogin',
+            cart: cart
+        }),
+        credentials: 'include'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log('Cart synced with server');
-        } else {
-            console.error('Error syncing cart with server');
+            // Update localStorage with merged cart
+            localStorage.setItem('cart', JSON.stringify(data.cart));
+            
+            // Re-render the cart
+            renderCart();
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error merging carts:', error);
     });
 }
+
+// Make the function available globally
+window.mergeCartsAfterLogin = mergeCartsAfterLogin;

@@ -23,7 +23,7 @@ class AuthController {
             if ($user) {
                 $_SESSION['user'] = $user;
                 unset($_SESSION['login_error']); 
-                header("Location: /mywebsite/public/index.php"); 
+                header("Location: " . BASE_URL . "/index.php?page=home"); 
                 exit();
             } else {
                 $_SESSION['login_error'] = "Login failed! Please check your email or password.";
@@ -49,7 +49,7 @@ public function register() {
                 $user = $this->authModel->register($email, $password, $name);
                 if ($user) {
                     $_SESSION['user'] = $user;
-                    header("Location: /mywebsite/public/index.php"); 
+                    header("Location: " . BASE_URL . "/index.php?page=home"); 
                     exit();
                 } else {
                     $_SESSION['register_error'] = "Registration failed!";

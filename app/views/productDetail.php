@@ -1,20 +1,25 @@
 <?php
-session_start();
+
 require_once __DIR__ . "/../../config/database.php";
 require_once __DIR__ . "/../controllers/ProductController.php";
 
 $product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-if ($product_id <= 0) {
-    header("Location: product.php");
-    exit;
+if (!isset($product_id) && !isset($_GET['id'])) {
+    header("Location: " . BASE_URL . "/index.php?page=product");
+    exit();
+}
+
+// If accessed directly, get ID from URL
+if (!isset($product_id) && isset($_GET['id'])) {
+    $productId = $_GET['id'];
 }
 
 $productController = new ProductController($conn);
 $product = $productController->show($product_id);
 
 if (!$product) {
-    header("Location: product.php");
+    header("Location: " . BASE_URL . "/index.php?page=product");
     exit;
 }
 ?>
@@ -25,12 +30,12 @@ if (!$product) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($product["name"]) ?> - PVI</title>
-    <link rel="stylesheet" href="../../public/css/style.css">
-    <link rel="stylesheet" href="../../public/css/cart.css">
-    <link rel="stylesheet" href="../../public/css/responsive.css">
-    <script src="../../public/js/web.js"></script>
-    <script src="../../public/js/cart.js"></script>
-    <link href="../../public/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/cart.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/responsive.css">
+ <script src="<?= BASE_URL ?>/js/web.js"></script>
+<script src="<?= BASE_URL ?>/js/cart.js"></script>
+ <link href="<?= BASE_URL ?>/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         #main-header .navbar-nav .nav-link, #main-header .navbar-brand {
@@ -179,6 +184,16 @@ if (!$product) {
             padding-top: 2rem;
         }
         
+        .add-to-cart-btn{
+            background-color: black;
+            color: white;
+            
+        }
+
+        .add-to-cart-btn:hover{
+            background-color: white;
+            color: black;
+        }
 
     </style>
 </head>
@@ -193,7 +208,7 @@ if (!$product) {
                 ☰
             </button>
 
-            <a class="navbar-brand d-lg-none d-block " href="/mywebsite/public/index.php">PVI</a>
+            <a class="navbar-brand d-lg-none d-block " href="/mywebsite/public/index.php?page=home">PVI</a>
             
             <a class="navbar-item ">
                 <a class="nav-link d-lg-none d-block" href="#" id="search-toggle-mobile">SEARCH</a>
@@ -226,10 +241,10 @@ if (!$product) {
                     <div class="side-cart-footer">
                         <div class="d-flex justify-content-between mb-3">
                             <strong>Total:</strong>
-                            <span id="cart-total">0 VND</span>
+                            <span id="cart-total">0 VNĐ</span>
                         </div>
-                        <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                        <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                        <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                        <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                     </div>
                 </div>
                 <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -242,10 +257,13 @@ if (!$product) {
                 <!-- Left menu items -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/public/index.php">HOME</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=home">HOME</a>
                     </li>
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/app/views/product.php">PRODUCT</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=product">PRODUCT</a>
+                    </li>
+                    <li class="navbar-item">
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=contact">CONTACT</a>
                     </li>
                 </ul>
                 
@@ -266,7 +284,7 @@ if (!$product) {
                         </div>
                     </li>
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/app/views/authentication.php">ACCOUNT</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=authentication">ACCOUNT</a>
                     </li>
                     <li class="navbar-item d-none d-lg-block">
                         <a class="nav-link">
@@ -287,10 +305,10 @@ if (!$product) {
                             <div class="side-cart-footer">
                                 <div class="d-flex justify-content-between mb-3">
                                     <strong>Total:</strong>
-                                    <span id="cart-total">0 VND</span>
+                                    <span id="cart-total">0 VNĐ</span>
                                 </div>
-                                <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                                <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                                <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                                <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                             </div>
                         </div>
                         <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -328,7 +346,7 @@ if (!$product) {
                 $price_str = preg_replace('/[^\d]/', '', $product["price"]);
                 $numeric_price = floatval($price_str);
                 ?>
-                <button class="btn btn-primary add-to-cart-btn" onclick="addToCart(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product["name"])) ?>', <?= $numeric_price ?>, '<?= htmlspecialchars($product["image"]) ?>')">
+                <button class="btn btn-primary add-to-cart-btn"  onclick="addToCart(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product["name"])) ?>', <?= $numeric_price ?>, '<?= htmlspecialchars($product["image"]) ?>')">
                     Add to Cart
                 </button>
                 
@@ -480,7 +498,7 @@ if (!$product) {
             data.forEach(product => {
                 const resultItem = document.createElement('a');
                 resultItem.className = 'list-group-item list-group-item-action';
-                resultItem.href = `/mywebsite/app/views/productdetail.php?id=${product.id}`;
+                resultItem.href = `${BASE_URL}/index.php?page=productDetail&id=${product.id}`;
                 resultItem.innerHTML = `
                     <div>${product.name}</div>
                 `;

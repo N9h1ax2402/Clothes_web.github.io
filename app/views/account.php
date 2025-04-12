@@ -1,13 +1,18 @@
 <?php
-session_start();
+
+require_once __DIR__ . "/../controllers/OrderController.php";
+require_once __DIR__ . "/../../config/database.php";
+require_once __DIR__ . "/../controllers/ProductController.php";
 
 if (!isset($_SESSION['user'])) {
-    header("Location: /mywebsite/app/views/authentication.php");
+    header("Location: " . BASE_URL . "/index.php?page=authentication");
     exit();
 }
 
 $user = $_SESSION['user'];
-$order = [];
+$orderList = new OrderController($conn);
+$orders = $orderList->getOrdersByUserId($user['id']);
+$productList = new ProductController($conn);
 
 ?>
 
@@ -17,22 +22,45 @@ $order = [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Account</title>
-    
-    <link href="../../public/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+
+
+    <link href="<?= BASE_URL ?>/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
     
     <style>
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
         .account-container {
             max-width: 900px;
-            margin: 30px auto;
+            height: 450px;
+            margin-top: 100px; /* Adjusted from 70px to 100px */
             padding: 20px;
             background-color: #f8f9fa;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            
         }
+
+    
         
+        @media (max-width: 991.98px) {
+            .account-container {
+                width: 100%;
+                height: calc(100vh - 100px);
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .account-container .user-info, .account-container .order-history {
+                height: calc(82vh - 100px);
+
+            }
+        }
+
         .user-info {
             padding: 20px;
-            margin-bottom: 20px;
+
+            height: 270px;
             background-color: white;
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.05);
@@ -40,17 +68,71 @@ $order = [];
         
         .order-history {
             padding: 20px;
+            height: 270px;
             background-color: white;
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            overflow: scroll;
         }
         
         .nav-tabs {
             margin-bottom: 20px;
         }
+
+        header {
+            background-color: white;
+            color: black;
+            
+        }
+
+        footer{
+            margin-top: 30px;
+        }
+
+        nav{
+            background-color: white;
+            color: black;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            
+        }
+
+        .navbar-brand {
+            font-size: 35px;
+            color: black;
+            letter-spacing: 1px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            padding-top: 10px;
+            margin: 0;
+        }
+
+        .navbar{
+            height: 50px;
+        }
+
+        @media (max-width: 991.98px) {
+            .account-container{
+                margin-top: 60px;
+            }
+        }
+
     </style>
 </head>
 <body>
+    <header>
+        <nav class="navbar navbar-expand-lg fixed-top">
+            <div class="container-fluid px-2 px-sm-3 px-md-5">
+                <div class="nav-left" onclick="history.back()" style="cursor: pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                    </svg>
+                </div>
+                <a class="navbar-brand " href="/mywebsite/public/index.php?page=home">PVI</a>
+                
+            </div>
+        </nav>
+    </header>
 
     <div class="container account-container">
         <div class="row mb-4">
@@ -58,16 +140,16 @@ $order = [];
                 <h1>Welcome back, <?php echo htmlspecialchars($user['name']); ?>!</h1>
             </div>
             <div class="col-auto">
-                <a href="/mywebsite/public/index.php?page=logout" class="btn btn-outline-danger">Logout</a>
+                <a href="/mywebsite/public/index.php?page=logout" class="btn btn-outline-dark">Logout</a>
             </div>
         </div>
         
         <ul class="nav nav-tabs" id="accountTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Profile</button>
+                <button class="nav-link active" style="color: black;" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Profile</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" aria-controls="orders" aria-selected="false">Order History</button>
+                <button class="nav-link" style="color: black;" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" aria-controls="orders" aria-selected="false">Order History</button>
             </li>
         </ul>
         
@@ -88,7 +170,7 @@ $order = [];
             
             <div class="tab-pane fade" id="orders" role="tabpanel" aria-labelledby="orders-tab">
                 <div class="order-history">
-                    <h3>Order History</h3>
+                    <h3 >Order History</h3>
                     <hr>
                     
                     <?php if (empty($orders)): ?>
@@ -100,29 +182,35 @@ $order = [];
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Order #</th>
+                                        <th>#</th>
                                         <th>Date</th>
-                                        <th>Status</th>
+                                        <th>Information</th>
                                         <th>Total</th>
-                                        <th>Actions</th>
+                                       
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <?php foreach ($orders as $order): ?>
-                                    <tr>
-                                        <td><?php echo $order['id']; ?></td>
-                                        <td><?php echo date('m/d/Y', strtotime($order['date'])); ?></td>
+                                <tbody >
+                                    <?php $i = 1; foreach ($orders as $order): ?>
+                                        <?php $product = $productList->show($order['product_id']) ?>
+                                        
+                                    <tr style="cursor: pointer;" onclick="window.location='<?php echo BASE_URL; ?>/index.php?page=productDetail&id=<?php echo $product['id']; ?>'">
+                                        
+                                        <td><?php echo $i ?></td>
+                                        <td><?php echo $order['order_date']; ?></td>
                                         <td>
-                                            <span class="badge bg-<?php echo getStatusColor($order['status']); ?>">
-                                                <?php echo $order['status']; ?>
-                                            </span>
+                                        
+                                        <img src="<?php echo $product['image']; ?>" style="width: 50px; height: 50px; border-radius: 5px;">
+                                        <?php echo $product['name']; ?>
+                
+                                        (<?php echo $order['quantity']; ?> x <?php echo ($product['price']); ?>)
+                                        
+                                        
                                         </td>
-                                        <td>$<?php echo number_format($order['total'], 2); ?></td>
-                                        <td>
-                                            <a href="/mywebsite/public/index.php?page=order&id=<?php echo $order['id']; ?>" class="btn btn-sm btn-primary">View</a>
-                                        </td>
+                                        <td><?php echo number_format($order['total_price'], 0, '', '.'); ?> VNĐ</td>
+                                        
                                     </tr>
-                                    <?php endforeach; ?>
+
+                                    <?php $i++;  endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -153,5 +241,10 @@ $order = [];
         }
     }
     ?>
+    <footer class="text-center">
+    <p>© 2025 My Website. All Rights Reserved.</p>
+</footer>
 </body>
+
+
 </html>

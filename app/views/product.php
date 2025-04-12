@@ -3,6 +3,9 @@ require_once __DIR__ . "/../../config/database.php";
 require_once __DIR__ . "/../controllers/ProductController.php";
 
 $productController = new ProductController($conn);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $products = $productController->index();
 
@@ -15,12 +18,12 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>Product Page</title>
- <link rel="stylesheet" href="../../public/css/style.css">
-    <link rel="stylesheet" href="../../public/css/cart.css">
-    <link rel="stylesheet" href="../../public/css/responsive.css">
- <script src="../../public/js/web.js"></script>
-<script src="../../public/js/cart.js"></script>
- <link href="../../public/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+ <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/cart.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/responsive.css">
+ <script src="<?= BASE_URL ?>/js/web.js"></script>
+<script src="<?= BASE_URL ?>/js/cart.js"></script>
+ <link href="<?= BASE_URL ?>/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
  <style>
      #main-header .navbar-nav .nav-link, #main-header .navbar-brand {
@@ -175,7 +178,7 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                 ☰
             </button>
 
-            <a class="navbar-brand d-lg-none d-block " href="/mywebsite/public/index.php">PVI</a>
+            <a class="navbar-brand d-lg-none d-block " href="/mywebsite/public/index.php?page=home">PVI</a>
             
             <a class="navbar-item ">
                 <a class="nav-link d-lg-none d-block" href="#" id="search-toggle-mobile">SEARCH</a>
@@ -210,8 +213,8 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                             <strong>Total:</strong>
                             <span id="cart-total">0 VND</span>
                         </div>
-                        <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                        <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                        <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                        <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                     </div>
                 </div>
                 <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -224,10 +227,13 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                 <!-- Left menu items -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/public/index.php">HOME</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=home">HOME</a>
                     </li>
                     <li class="navbar-item">
                         <a class="nav-link" href="#">PRODUCT</a>
+                    </li>
+                    <li class="navbar-item">
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=contact">CONTACT</a>
                     </li>
                 </ul>
                 
@@ -248,7 +254,7 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                         </div>
                     </li>
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/app/views/authentication.php">ACCOUNT</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=authentication">ACCOUNT</a>
                     </li>
                     <li class="navbar-item d-none d-lg-block">
                         <a class="nav-link">
@@ -271,8 +277,8 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                                     <strong>Total:</strong>
                                     <span id="cart-total">0 VND</span>
                                 </div>
-                                <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                                <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                                <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                                <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                             </div>
                         </div>
                         <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -308,7 +314,7 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
                 <?php foreach ($products as $product): ?>
                     <div class="col">
                         <div class="product-card position-relative">
-                            <a href="productDetail.php?id=<?= $product['id'] ?>" class="text-decoration-none text-dark">
+                            <a href="<?php echo BASE_URL; ?>/index.php?page=productDetail&id=<?php echo $product['id']; ?>" class="text-decoration-none text-dark">
                                 <div class="product-image-container">
                                     <img src="<?= htmlspecialchars($product["image"]) ?>" alt="<?= htmlspecialchars($product["name"]) ?>" class="img-fluid product-image" loading="lazy">
                                 </div>
@@ -461,7 +467,7 @@ function displayResults(data, searchResults, searchBar, searchTerm) {
     data.forEach(product => {
         const resultItem = document.createElement('a');
         resultItem.className = 'list-group-item list-group-item-action';
-        resultItem.href = `/mywebsite/app/views/productdetail.php?id=${product.id}`;
+        resultItem.href = `${BASE_URL}/index.php?page=productDetail&id=${product.id}`;
         resultItem.innerHTML = `
             <div>${product.name}</div>
         `;

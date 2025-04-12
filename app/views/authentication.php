@@ -1,9 +1,8 @@
 <?php
 
-session_start();
 
 if (isset($_SESSION['user'])) {
-    header("Location: /mywebsite/app/views/account.php");
+    header("Location: " . BASE_URL . "/index.php?page=account");
     exit();
 }
 
@@ -29,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>My New Website</title>
 
- <script src="../../public/js/web.js"></script>
- <link href="../../public/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+ <script src="<?= BASE_URL ?>/js/web.js"></script>
+ <link href="<?= BASE_URL ?>/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
  <style>
   body{
     height: 100vh;
@@ -53,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   
   .brand{
     font-size: 30px;
-    font-weight: bold;
+
     color: black;
     margin-bottom: 30px;
     letter-spacing: 1px;
@@ -91,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <div class="tab-content">
     <div class="brand text-center" >
-    <a href="/mywebsite/public/index.php" class="text-black text-decoration-none">PVI</a>
+    <a href="/mywebsite/public/index.php?page=home" class="text-black text-decoration-none">PVI</a>
     </div>
     <div class="tab-pane fade show active" id="pills-login" role="tabpanel" aria-labelledby="tab-login">
       <form method="POST">
@@ -106,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="d-grid">
-          <button type="submit" name="login" class="btn btn-primary mb-4">Sign in</button>
+          <button type="submit" name="login" class="btn btn-outline-dark mb-4">Sign in</button>
         </div>
         
 
@@ -139,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         
          <div class="d-grid">  
-        <button type="submit" name="register" class="btn btn-primary  mb-3">Sign up</button>
+        <button type="submit" name="register" class="btn btn-outline-dark  mb-3">Sign up</button>
         </div>
         
         <div class="text-center">
@@ -171,18 +170,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   });
 
   document.addEventListener('DOMContentLoaded', function() {
-  const registerForm = document.querySelector('#pills-register form');
-  
-  registerForm.addEventListener('submit', function(e) {
-    const password = document.getElementById('registerPassword').value;
-    const confirmPassword = document.getElementById('registerRepeatPassword').value;
+    const registerForm = document.querySelector('#pills-register form');
     
-    if (password !== confirmPassword) {
-      e.preventDefault();
-      alert('Passwords do not match!');
-    }
+    registerForm.addEventListener('submit', function(e) {
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('registerRepeatPassword').value;
+      
+      if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+      }
+    });
   });
-});
+
+  
  </script>
 </body>
 </html>

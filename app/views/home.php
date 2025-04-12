@@ -15,7 +15,6 @@ require_once __DIR__ . "/../controllers/ProductController.php";
  <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css" type="text/css"/>
 <link rel="stylesheet" href="<?= BASE_URL ?>/css/cart.css" type="text/css"/> 
  <link href="<?= BASE_URL ?>/css/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet"/>
- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
  <style>
      .lazy-padding {
@@ -336,8 +335,8 @@ require_once __DIR__ . "/../controllers/ProductController.php";
                             <strong>Total:</strong>
                             <span id="cart-total">0 VND</span>
                         </div>
-                        <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                        <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                        <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                        <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                     </div>
                 </div>
                 <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -353,7 +352,10 @@ require_once __DIR__ . "/../controllers/ProductController.php";
                         <a class="nav-link" href="#">HOME</a>
                     </li>
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/app/views/product.php">PRODUCT</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=product">PRODUCT</a>
+                    </li>
+                    <li class="navbar-item">
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=contact">CONTACT</a>
                     </li>
                 </ul>
                 
@@ -374,7 +376,7 @@ require_once __DIR__ . "/../controllers/ProductController.php";
                         </div>
                     </li>
                     <li class="navbar-item">
-                        <a class="nav-link" href="/mywebsite/app/views/authentication.php">ACCOUNT</a>
+                        <a class="nav-link" href="/mywebsite/public/index.php?page=authentication">ACCOUNT</a>
                     </li>
                     <li class="navbar-item ">
                         <a class="nav-link d-none d-lg-block">
@@ -397,8 +399,8 @@ require_once __DIR__ . "/../controllers/ProductController.php";
                                     <strong>Total:</strong>
                                     <span id="cart-total">0 VND</span>
                                 </div>
-                                <a href="#" class="btn btn-primary w-100 mb-2">Checkout</a>
-                                <button id="clear-cart" class="btn btn-outline-secondary w-100">Clear Cart</button>
+                                <a href="/mywebsite/public/index.php?page=payment" class="btn btn-outline-dark w-100 mb-2">Checkout</a>
+                                <button id="clear-cart" class="btn btn-outline-dark w-100">Clear Cart</button>
                             </div>
                         </div>
                         <div id="cart-backdrop" class="cart-backdrop"></div>
@@ -475,51 +477,13 @@ require_once __DIR__ . "/../controllers/ProductController.php";
             </div>
         </div>
     </section>
-    <div class="row">
-        <div class="col-6" style="padding-left:40px;">
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2330.5558645775536!2d106.65693256310192!3d10.77203161273706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752ec3c161a3fb%3A0xef77cd47a1cc691e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBCw6FjaCBraG9hIC0gxJDhuqFpIGjhu41jIFF14buRYyBnaWEgVFAuSENN!5e0!3m2!1svi!2s!4v1743775827500!5m2!1svi!2s" width="600" height="300" style="border-radius:5px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-        <div class="col-6">
-            <p style="font-size: 20px; margin-top: 50px; margin-left: 30px; font-weight:bold">
-                Address
-                <ul>
-                 268 Ly Thuong Kiet, Ward 14, District 10, Ho Chi Minh City
-                </ul>
-            </p>
-            <p style="font-size: 20px; margin-left: 30px; font-weight:bold">
-                Contact
-                <ul>
-                    Email: paulaml117@gmail.com
-                </ul>
-                <ul>
-                    Phone: +84 797460124
-                </ul>
-                
-            </p>
-        </div>
-    </div>
+
  </main>
 
  <footer class="text-center" style="margin-top: 20px;">
     <p>&copy; 2025 PVI. All Rights Reserved.</p>
  </footer>
 
-
-<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
-<script>
-    var map = L.map('map').setView([10.772821, 106.659052], 15);
-
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
-var marker = L.marker([10.772821, 106.659052]).addTo(map);
-var inforWindown = L.popup({ closeOnClick: false})
-.setLatLng(marker.getLatLng())
-.setContent('<b>Ho Chi Minh University of Technology</b> ');
-marker.bindPopup(inforWindown);
-inforWindown.openOn(map);
-</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -666,7 +630,7 @@ inforWindown.openOn(map);
             data.forEach(product => {
                 const resultItem = document.createElement('a');
                 resultItem.className = 'list-group-item list-group-item-action';
-                resultItem.href = `/mywebsite/app/views/productdetail.php?id=${product.id}`;
+                resultItem.href = `${BASE_URL}/index.php?page=productDetail&id=${product.id}`;
                 resultItem.innerHTML = `
                     <div>${product.name}</div>
                 `;
