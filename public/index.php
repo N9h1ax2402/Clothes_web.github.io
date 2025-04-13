@@ -1,4 +1,5 @@
 <?php
+
 session_start(); 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -29,9 +30,12 @@ switch ($page) {
     case 'authentication':
         require_once BASE_PATH . '/app/views/authentication.php';
         break;
-    
+    case 'account':
+        require_once BASE_PATH . '/app/views/account.php';
+        break;
     case 'logout':
         session_destroy();
+        
         header("Location: " . BASE_URL . "/index.php");
         exit();
         break;
@@ -39,3 +43,6 @@ switch ($page) {
         require_once BASE_PATH . '/app/views/404.php'; 
         break;
 }
+
+
+?>

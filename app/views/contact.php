@@ -390,9 +390,9 @@ footer {
 
 <main>
 <div class="text-center" style="font-size: 25px; margin-bottom: 20px; font-weight:bold;">CONTACT US</div>
-<div class="row">
-    <div class="col-12 col-md-6 mb-4 mb-md-0" style="padding-left:40px;">
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2330.5558645775536!2d106.65693256310192!3d10.77203161273706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752ec3c161a3fb%3A0xef77cd47a1cc691e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBCw6FjaCBraG9hIC0gxJDhuqFpIGjhu41jIFF14buRYyBnaWEgVFAuSENN!5e0!3m2!1svi!2s!4v1743775827500!5m2!1svi!2s" width="100%" height="300" style="border-radius:5px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+<div class="row d-flex justify-content-center">
+    <div class="col-12 col-md-6 mb-4 mb-md-0 d-flex justify-content-end" >
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2330.5558645775536!2d106.65693256310192!3d10.77203161273706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752ec3c161a3fb%3A0xef77cd47a1cc691e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBCw6FjaCBraG9hIC0gxJDhuqFpIGjhu41jIFF14buRYyBnaWEgVFAuSENN!5e0!3m2!1svi!2s!4v1743775827500!5m2!1svi!2s" width="600" height="300" style="border-radius:5px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
     <div class="col-12 col-md-6">
         <p style="font-size: 20px; margin-top: 20px; margin-left: 10px; font-weight:bold">

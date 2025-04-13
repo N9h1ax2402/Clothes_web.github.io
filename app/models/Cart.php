@@ -17,6 +17,7 @@ class Cart {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
             FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB";
+        $this->conn->exec($stmt);
     }
     
     public function getUserCart($userId) {

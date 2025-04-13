@@ -163,7 +163,12 @@ $sort_by = $_GET['sort_by'] ?? 'name_asc';
     
 }
 
-
+footer {
+    text-align: center;
+    margin-top: auto;
+    padding: 10px 0;
+    background-color: #f8f9fa;
+}
 
  </style>
 </head>

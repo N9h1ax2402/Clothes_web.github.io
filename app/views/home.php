@@ -287,6 +287,13 @@ require_once __DIR__ . "/../controllers/ProductController.php";
         }
     }
 
+    footer {
+    text-align: center;
+    margin-top: auto;
+    padding: 10px 0;
+    background-color: #f8f9fa;
+}
+
  </style>
 </head>
 <body>
