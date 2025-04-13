@@ -6,9 +6,10 @@ class Cart {
     
     public function __construct($conn) {
         $this->conn = $conn;
+        $this->createCart();
     }
 
-    public function createCart($userId) {
+    public function createCart() {
         $stmt = "CREATE TABLE IF NOT EXISTS cart_items (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
@@ -30,10 +31,12 @@ class Cart {
         
         $cart = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $price = (int)str_replace('.', '', $row['price']); // Convert price to integer
             $cart[] = [
                 'id' => (int)$row['id'],
                 'name' => $row['name'],
-                'price' => (int)$row['price'],
+                'price' => $price, // Store as integer for calculations
+                'formatted_price' => number_format($price, 0, ',', '.') . ' VND', // Add formatted price
                 'image' => $row['image'],
                 'quantity' => (int)$row['quantity']
             ];
@@ -78,9 +81,9 @@ class Cart {
         }
     }
     
-    public function mergeSessionCartWithUserCart($userId) {
-        // Get carts from both localStorage (via $_SESSION['local_cart']) and database
-        $localCart = isset($_SESSION['local_cart']) ? $_SESSION['local_cart'] : [];
+    public function mergeSessionCartWithUserCart($userId, $localCart = null) {
+        // If localCart is not provided, fall back to session (for backward compatibility)
+        $localCart = $localCart ?? (isset($_SESSION['local_cart']) ? $_SESSION['local_cart'] : []);
         $dbCart = $this->getUserCart($userId);
         
         $mergedCart = $this->mergeCartItems($localCart, $dbCart);
@@ -95,24 +98,18 @@ class Cart {
     }
     
     public function syncCart($clientCart) {
-        // Check if user is logged in
         $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
-        
+
         if ($userId) {
-            // User is logged in, merge cart from client with database cart
             $dbCart = $this->getUserCart($userId);
             $mergedCart = $this->mergeCartItems($clientCart, $dbCart);
-            
-            // Save merged cart to database
             $this->updateUserCart($userId, $mergedCart);
-            
             return $mergedCart;
         } else {
-            // User is not logged in, store cart in session for later merging
-            $_SESSION['local_cart'] = $clientCart;
-            
-            // Just return the same cart back
-            return $clientCart;
+            $sessionCart = $this->getSessionCart();
+            $mergedCart = $this->mergeCartItems($clientCart, $sessionCart);
+            $_SESSION['local_cart'] = $mergedCart;
+            return $mergedCart;
         }
     }
     
@@ -120,6 +117,8 @@ class Cart {
         if (!isset($_SESSION['local_cart'])) {
             $_SESSION['local_cart'] = [];
         }
+        
+        $quantity = max(1, (int)$quantity); // Ensure quantity is at least 1
         
         $found = false;
         foreach ($_SESSION['local_cart'] as &$item) {
@@ -131,7 +130,6 @@ class Cart {
         }
         
         if (!$found) {
-            // Get product details
             $stmt = $this->conn->prepare("SELECT * FROM product WHERE id = :id");
             $stmt->bindParam(':id', $productId, PDO::PARAM_INT);
             $stmt->execute();
@@ -141,7 +139,7 @@ class Cart {
                 $_SESSION['local_cart'][] = [
                     'id' => (int)$productId,
                     'name' => $product['name'],
-                    'price' => (int)$product['price'],
+                    'price' => $product['price'],
                     'image' => $product['image'],
                     'quantity' => $quantity
                 ];
@@ -167,29 +165,37 @@ class Cart {
     }
     
     private function mergeCartItems($clientCart, $dbCart) {
-        // Create a map for faster item lookup
         $mergedItems = [];
         
-        // Add all database items to the merged cart first
+        // Start with database cart as the base
         foreach ($dbCart as $dbItem) {
             $mergedItems[$dbItem['id']] = $dbItem;
         }
         
-        // Now merge client items - either add new ones or update quantities
+        // Update with client cart, preferring client quantities to avoid duplication
         foreach ($clientCart as $clientItem) {
-            $itemId = $clientItem['id'];
+            $itemId = (int)$clientItem['id'];
+            if ($itemId <= 0 || !isset($clientItem['quantity']) || (int)$clientItem['quantity'] <= 0) {
+                continue;
+            }
             
             if (isset($mergedItems[$itemId])) {
-                // Item exists in both carts, combine quantities
-                $mergedItems[$itemId]['quantity'] += $clientItem['quantity'];
+                // Use client quantity to prevent accumulation
+                $mergedItems[$itemId]['quantity'] = (int)$clientItem['quantity'];
             } else {
-                // New item from client cart
-                $mergedItems[$itemId] = $clientItem;
+                $mergedItems[$itemId] = [
+                    'id' => $itemId,
+                    'name' => $clientItem['name'],
+                    'price' => $clientItem['price'],
+                    'image' => $clientItem['image'],
+                    'quantity' => (int)$clientItem['quantity']
+                ];
             }
         }
         
-        // Convert back to indexed array
-        return array_values($mergedItems);
+        return array_values(array_filter($mergedItems, function($item) {
+            return $item['quantity'] > 0;
+        }));
     }
     
     public function removeFromCart($productId) {
@@ -200,7 +206,10 @@ class Cart {
             $stmt = $this->conn->prepare("DELETE FROM cart_items WHERE user_id = :userId AND product_id = :productId");
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
-            return $stmt->execute();
+            $result = $stmt->execute();
+            error_log("Delete result: " . ($result ? "success" : "failed"));
+            return $result;
+            
         } else {
             // Remove from session
             if (isset($_SESSION['local_cart'])) {
@@ -219,39 +228,39 @@ class Cart {
     
     public function updateCartItemQuantity($productId, $quantity) {
         $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
-        
+
         if ($userId) {
-            // Update in database
             if ($quantity <= 0) {
-                // Remove item if quantity is 0 or negative
+                // Ensure the item is deleted from the database
                 return $this->removeFromCart($productId);
             }
-            
+
             $stmt = $this->conn->prepare("UPDATE cart_items SET quantity = :quantity 
                                         WHERE user_id = :userId AND product_id = :productId");
             $stmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':productId', $productId, PDO::PARAM_INT);
             return $stmt->execute();
-        } else {
-            // Update in session
-            if (isset($_SESSION['local_cart'])) {
-                foreach ($_SESSION['local_cart'] as &$item) {
-                    if ($item['id'] == $productId) {
-                        if ($quantity <= 0) {
-                            // Remove item if quantity is 0 or negative
-                            return $this->removeFromCart($productId);
-                        }
-                        $item['quantity'] = $quantity;
+        }
+
+        if (isset($_SESSION['local_cart'])) {
+            foreach ($_SESSION['local_cart'] as $key => &$item) {
+                if ($item['id'] == $productId) {
+                    if ($quantity <= 0) {
+                        // Remove the item from the session cart
+                        unset($_SESSION['local_cart'][$key]);
+                        $_SESSION['local_cart'] = array_values($_SESSION['local_cart']); // Reindex array
                         return true;
                     }
+                    $item['quantity'] = $quantity;
+                    return true;
                 }
             }
         }
-        
+
         return false;
     }
-    
+
     public function clearCart() {
         $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
         
@@ -265,6 +274,20 @@ class Cart {
             $_SESSION['local_cart'] = [];
             return true;
         }
+    }
+
+    public function clearCartOnLogout() {
+        $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
+
+        if ($userId) {
+            // Clear database cart
+            $stmt = $this->conn->prepare("DELETE FROM cart_items WHERE user_id = :userId");
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+        }
+
+        // Clear session cart
+        $_SESSION['local_cart'] = [];
     }
 }
 ?>

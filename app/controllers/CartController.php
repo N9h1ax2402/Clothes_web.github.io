@@ -1,33 +1,36 @@
 <?php
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'check_login') {
-    header('Content-Type: application/json');
-    echo json_encode([
-        'loggedIn' => isset($_SESSION['user']),
-        'userId' => isset($_SESSION['user']) ? $_SESSION['user']['id'] : null
-    ]);
-    exit;
 }
 
 require_once __DIR__ . '/../models/Cart.php';
 require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/../../config/database.php';
 
-// Initialize database connection and cart model
 $cartModel = new Cart($conn);
 $productModel = new Product($conn);
 
-// For GET requests (mainly for the cart status check)
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_cart') {
-    handleGetCart();
-    exit;
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
+    switch ($_GET['action']) {
+        case 'check_login':
+            header('Content-Type: application/json');
+            echo json_encode([
+                'loggedIn' => isset($_SESSION['user']),
+                'userId' => isset($_SESSION['user']) ? $_SESSION['user']['id'] : null
+            ]);
+            exit;
+            
+        case 'get_cart':
+            handleGetCart();
+            exit;
+            
+        default:
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            exit;
+    }
 }
 
-// For POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
@@ -67,7 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
             
         case 'mergeCartsAfterLogin':
-            handleMergeCartsAfterLogin();
+            handleMergeCartsAfterLogin($data['cart'] ?? []);
+            break;
+            
+        case 'logout':
+            handleLogout();
             break;
             
         default:
@@ -77,23 +84,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-/**
- * Handle updating cart with a completely new cart
- */
+function handleGetCart() {
+    global $cartModel;
+    
+    $cart = $cartModel->getCart();
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'cart' => $cart
+    ]);
+}
+
 function handleUpdateCart($cartData) {
     global $cartModel;
     
     $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
     
     if ($userId) {
-        // Store cart data in session for syncing with localStorage
-        $_SESSION['local_cart'] = $cartData;
-        // User is logged in, update the database cart
         $success = $cartModel->updateUserCart($userId, $cartData);
     } else {
-        // User is not logged in, update the session cart
-        $_SESSION['local_cart'] = $cartData;
-        $success = true;
+        $success = true; // Client handles anonymous cart
     }
     
     echo json_encode([
@@ -102,65 +113,39 @@ function handleUpdateCart($cartData) {
     ]);
 }
 
-/**
- * Handle retrieving current cart
- */
-function handleGetCart() {
-    global $cartModel;
-    
-    $cart = $cartModel->getCart();
-    
-    echo json_encode([
-        'success' => true,
-        'cart' => $cart
-    ]);
-}
-
-/**
- * Handle syncing client-side cart with server-side
- */
 function handleSyncCart($clientCart) {
     global $cartModel;
-    
-    // Store the client cart in session for merging after login
-    $_SESSION['local_cart'] = $clientCart;
-    
+
     $mergedCart = $cartModel->syncCart($clientCart);
-    
+
     echo json_encode([
         'success' => true,
         'cart' => $mergedCart
     ]);
 }
 
-/**
- * Handle adding an item to the cart
- */
 function handleAddItem($productId, $quantity) {
     global $cartModel, $productModel;
     
     $productId = (int)$productId;
-    $quantity = (int)$quantity;
+    $quantity = max(1, (int)$quantity); // Ensure quantity is at least 1
     
-    if ($productId <= 0 || $quantity <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Invalid product ID or quantity']);
+    if ($productId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid product ID']);
         return;
     }
     
     $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
     
     if ($userId) {
-        // User is logged in, add to database cart
         $product = $productModel->getProductById($productId);
         if (!$product) {
             echo json_encode(['success' => false, 'message' => 'Product not found']);
             return;
         }
         
-        // Get current cart
         $cart = $cartModel->getUserCart($userId);
         
-        // Check if product already exists in cart
         $found = false;
         foreach ($cart as &$item) {
             if ($item['id'] == $productId) {
@@ -171,11 +156,10 @@ function handleAddItem($productId, $quantity) {
         }
         
         if (!$found) {
-            // Add new item
             $cart[] = [
                 'id' => $productId,
                 'name' => $product['name'],
-                'price' => (int)$product['price'],
+                'price' => $product['price'],
                 'image' => $product['image'],
                 'quantity' => $quantity
             ];
@@ -184,7 +168,6 @@ function handleAddItem($productId, $quantity) {
         $success = $cartModel->updateUserCart($userId, $cart);
         $updatedCart = $cartModel->getUserCart($userId);
     } else {
-        // User is not logged in, add to session cart
         $updatedCart = $cartModel->addToSessionCart($productId, $quantity);
         $success = true;
     }
@@ -195,9 +178,6 @@ function handleAddItem($productId, $quantity) {
     ]);
 }
 
-/**
- * Handle removing an item from the cart
- */
 function handleRemoveItem($productId) {
     global $cartModel;
     
@@ -216,9 +196,6 @@ function handleRemoveItem($productId) {
     ]);
 }
 
-/**
- * Handle updating the quantity of an item
- */
 function handleUpdateQuantity($productId, $quantity) {
     global $cartModel;
     
@@ -238,9 +215,6 @@ function handleUpdateQuantity($productId, $quantity) {
     ]);
 }
 
-/**
- * Handle clearing the entire cart
- */
 function handleClearCart() {
     global $cartModel;
     
@@ -252,10 +226,7 @@ function handleClearCart() {
     ]);
 }
 
-/**
- * Handle merging carts after login
- */
-function handleMergeCartsAfterLogin() {
+function handleMergeCartsAfterLogin($localCart) {
     global $cartModel;
     
     $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
@@ -265,11 +236,25 @@ function handleMergeCartsAfterLogin() {
         return;
     }
     
-    $mergedCart = $cartModel->mergeSessionCartWithUserCart($userId);
+    $mergedCart = $cartModel->mergeSessionCartWithUserCart($userId, $localCart);
     
     echo json_encode([
         'success' => true,
         'cart' => $mergedCart
+    ]);
+}
+
+function handleLogout() {
+    global $cartModel;
+
+    $cartModel->clearCartOnLogout();
+    unset($_SESSION['user']);
+    session_destroy();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Logged out successfully',
+        'cart' => [] // Ensure cart display is cleared
     ]);
 }
 ?>

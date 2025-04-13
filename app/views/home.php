@@ -446,7 +446,7 @@ require_once __DIR__ . "/../controllers/ProductController.php";
                 <p class="text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px; color: #fff; opacity: 0.7;">Collection</p>
             </div>
             
-            <a href="/mywebsite/app/views/product.php" class="position-absolute top-0 start-0 w-100 h-100" style="z-index: 5;"></a>
+            <a href="/mywebsite/public/index.php?page=product" class="position-absolute top-0 start-0 w-100 h-100" style="z-index: 5;"></a>
             
             
         </div>
@@ -658,6 +658,9 @@ require_once __DIR__ . "/../controllers/ProductController.php";
             console.log('Dropdown should be visible now');
         }
     });
+
+    
+
 </script>
 </body>
 </html>

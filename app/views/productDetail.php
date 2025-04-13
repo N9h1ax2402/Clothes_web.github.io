@@ -346,7 +346,7 @@ if (!$product) {
                 $price_str = preg_replace('/[^\d]/', '', $product["price"]);
                 $numeric_price = floatval($price_str);
                 ?>
-                <button class="btn btn-primary add-to-cart-btn"  onclick="addToCart(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product["name"])) ?>', <?= $numeric_price ?>, '<?= htmlspecialchars($product["image"]) ?>')">
+                <button class="btn btn-primary add-to-cart-btn"  >
                     Add to Cart
                 </button>
                 

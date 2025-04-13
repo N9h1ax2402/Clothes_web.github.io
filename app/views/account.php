@@ -139,7 +139,7 @@ $productList = new ProductController($conn);
                     <h1>Welcome back, <?php echo htmlspecialchars($user['name']); ?>!</h1>
                 </div>
                 <div class="col-auto">
-                    <a href="<?= BASE_URL ?>/index.php?page=logout" class="btn btn-outline-dark">Logout</a>
+                    <a href="<?= BASE_URL ?>/index.php?page=logout" onclick="clearCartOnLogout()" class="btn btn-outline-dark">Logout</a>
                 </div>
             </div>
             
@@ -216,5 +216,12 @@ $productList = new ProductController($conn);
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function clearCartOnLogout() {
+            localStorage.removeItem('cart'); // hoặc localStorage.clear(); nếu muốn xóa hết
+        }
+    </script>
+
 </body>
 </html>

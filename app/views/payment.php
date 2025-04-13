@@ -1,7 +1,8 @@
 <?php
 require_once __DIR__ . '/../controllers/ProductController.php';
 require_once __DIR__ . '/../controllers/OrderController.php';
-require_once __DIR__ . '/../../config/database.php'; 
+require_once __DIR__ . '/../models/Cart.php';
+require_once __DIR__ . '/../../config/database.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,103 +10,94 @@ if (session_status() === PHP_SESSION_NONE) {
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Fetch cart data from the session
-$cart = $_SESSION['cart'] ?? [];
+// Kiểm tra người dùng đã đăng nhập
+$userId = $_SESSION['user']['id'] ?? null;
+if (!$userId) {
+    header('Location: /mywebsite/public/index.php?page=authentication');
+    exit;
+}
+
+// Khởi tạo đối tượng Cart
+$cartModel = new Cart($conn);
+
+// Lấy giỏ hàng từ database
+$cart = $cartModel->getUserCart($userId);
 $totalAmount = 0;
 
-
-
-
-// Check if this is a POST request
+// Xử lý yêu cầu POST (đặt hàng)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get user ID from session
-    $userId = $_SESSION['user']['id'] ?? null;
-    $cart = $_SESSION['cart'] ?? [];
-
     $postData = json_decode(file_get_contents('php://input'), true);
     $formData = $postData['formData'] ?? [];
 
-    
-
-    // Check if user is logged in
-    if (!$userId) {
-        echo json_encode(['success' => false, 'message' => 'User not logged in']);
-        header('Location: /mywebsite/public/index.php?page=authentication');
-    }
-
-    // Check if cart is empty
+    // Kiểm tra giỏ hàng rỗng
     if (empty($cart)) {
         echo json_encode(['success' => false, 'message' => 'Cart is empty']);
         exit;
     }
-    
-    // Validate form data
+
+    // Kiểm tra dữ liệu form
     if (empty($formData['firstName']) || empty($formData['lastName']) || 
         empty($formData['address']) || empty($formData['phone'])) {
         echo json_encode(['success' => false, 'message' => 'Please fill in all delivery details']);
         exit;
     }
-    
+
     try {
         $orderController = new OrderController($conn);
         $allOrdersSuccessful = true;
         $orderMessage = 'Order placed successfully!';
-        
+        $orderTotalAmount = 0; // Tổng tiền cho toàn bộ đơn hàng
+
+        // Tính tổng tiền và tạo đơn hàng cho từng sản phẩm
         foreach ($cart as $item) {
-            if (!isset($item['id']) || !isset($item['quantity'])) {
+            if (!isset($item['id']) || !isset($item['quantity']) || !isset($item['price'])) {
                 echo json_encode(['success' => false, 'message' => 'Invalid item in cart']);
                 exit;
             }
 
-            if (!isset($item['price']) || !isset($item['quantity'])) {
-                echo json_encode(['success' => false, 'message' => 'Invalid item in cart']);
-                exit;
-            }
-            
-            // Accumulate the total
-            $totalAmount = $item['price'] * $item['quantity'];
-            
             $productId = $item['id'];
             $quantity = $item['quantity'];
-           
-            // Create order for each item in the cart with delivery details
+            $itemTotal = $item['price'] * $item['quantity'];
+            $orderTotalAmount += $itemTotal;
+
+            // Tạo đơn hàng
             $result = $orderController->createOrder(
-                $userId, 
-                $productId, 
-                $quantity, 
-                $totalAmount,
-                $formData['address'], 
-                $formData['firstName'], 
-                $formData['lastName'], 
+                $userId,
+                $productId,
+                $quantity,
+                $itemTotal,
+                $formData['address'],
+                $formData['firstName'],
+                $formData['lastName'],
                 $formData['phone']
             );
-            
-            // Check if order creation was successful
-            if (!isset($result['success']) || $result['success'] === false) {
+
+            // Kiểm tra kết quả tạo đơn hàng
+            if (!isset($result['success']) || !$result['success']) {
                 $allOrdersSuccessful = false;
                 $orderMessage = $result['message'] ?? 'Failed to place order. Please try again.';
                 break;
             }
         }
-        
-        // Clear cart if all orders were successful
+
+        // Xóa giỏ hàng nếu tất cả đơn hàng thành công
         if ($allOrdersSuccessful) {
-            $_SESSION['cart'] = [];
+            $cartModel->clearCart();
         }
-        
-        // Return JSON response
+
+        // Trả về kết quả
         echo json_encode([
-            'success' => $allOrdersSuccessful, 
+            'success' => $allOrdersSuccessful,
             'message' => $orderMessage
         ]);
-        
+
     } catch (Exception $e) {
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'message' => 'Error: ' . $e->getMessage()
         ]);
     }
-    
+
     exit;
 }
 ?>
@@ -121,7 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <style>
         body {
-            
             background-color: #f5f5f5;
             color: #333;
             margin: 0;
@@ -129,18 +120,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header {
             background-color: #fff;
-
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
-            justify-content: center; /* Center the navbar-brand */
+            justify-content: center;
             position: sticky;
             top: 0;
             z-index: 1000;
         }
         .navbar-brand {
             font-size: 35px;
-           
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #000;
@@ -151,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .nav-left {
             position: absolute;
-            left: 20px; /* Keep the back arrow on the left */
+            left: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -229,23 +218,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .button-wrapper {
             display: flex;
             margin-top: 30px;
-            
-        }
-        .button {
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
         }
         .pay-button {
             background-color: #000;
             color: #fff;
-            width: 100%; /* Make the button full width */
+            width: 100%;
             padding: 12px 24px;
             font-size: 14px;
             font-weight: 600;
@@ -269,13 +246,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 height: auto;
             }
         }
-
         footer {
-    text-align: center;
-    margin-top: auto;
-    padding: 10px 0;
-    background-color: #f8f9fa;
-}
+            text-align: center;
+            margin-top: auto;
+            padding: 10px 0;
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -293,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Left Section: Delivery Details -->
     <div class="left">
         <h2>Delivery Details</h2>
-        <form id="delivery-form" >
+        <form id="delivery-form">
             <label for="firstName">First Name</label>
             <input type="text" id="firstName" name="firstName" required>
             <label for="lastName">Last Name</label>
@@ -327,91 +303,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span><?= number_format($totalAmount, 0, ',', '.') ?>VNĐ</span>
             </div>
             <div class="button-wrapper">
-                <button id="pay-now-btn" class="button pay-button">Pay Now</button>
+                <button id="pay-now-btn" class="pay-button">Pay Now</button>
             </div>
         <?php endif; ?>
     </div>
 </div>
 
-    <script>
-    document.getElementById('pay-now-btn')?.addEventListener('click', function() {
-        // Disable the button and show loading state
-        this.disabled = true;
-        this.textContent = 'Processing...';
-        
-        // Validate form if needed
-        const form = document.getElementById('delivery-form');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            this.disabled = false;
-            this.textContent = 'Pay Now';
-            return;
+<script>
+document.getElementById('pay-now-btn')?.addEventListener('click', function() {
+    // Disable the button and show loading state
+    this.disabled = true;
+    this.textContent = 'Processing...';
+    
+    // Validate form
+    const form = document.getElementById('delivery-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        this.disabled = false;
+        this.textContent = 'Pay Now';
+        return;
+    }
+
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ 
+            action: 'pay_now',
+            formData: {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value
+            }
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
-        if (!<?php echo isset($_SESSION['user']) ? 'true' : 'false'; ?>) {
-                alert('You need to log in to place an order.');
-                window.location.href = '/mywebsite/public/index.php?page=authentication';
-            }
-        
-        fetch(window.location.href, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ 
-                action: 'pay_now',
-                // You can add form data here if needed
-                formData: {
-                    firstName: document.getElementById('firstName').value,
-                    lastName: document.getElementById('lastName').value,
-                    address: document.getElementById('address').value,
-                    phone: document.getElementById('phone').value
-                }
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            
-            return response.text();
-        })
-        .then(text => {
-            if (!text) {
-                throw new Error('Empty response from server');
-            }
-            
-            try {
-                return JSON.parse(text);
-            } catch (error) {
-                console.error('Failed to parse response as JSON:', text);
-                throw new Error('Invalid JSON response from server');
-            }
-        })
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                if (typeof clearCartItems === 'function') {
-                    clearCartItems();
-                } else {
-                    console.error('clearCartItems function not found!');
-                }
-                window.location.href = '/mywebsite/public/index.php?page=product'; 
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            if (typeof clearCartItems === 'function') {
+                clearCartItems();
             } else {
-                alert(data.message);
-                // Reset button
-                this.disabled = false;
-                this.textContent = 'Pay Now';
+                console.error('clearCartItems function not found!');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while processing your order. Please try again.');
-            // Reset button
+            window.location.href = '/mywebsite/public/index.php?page=product'; 
+        } else {
+            alert(data.message);
             this.disabled = false;
             this.textContent = 'Pay Now';
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while processing your order. Please try again.');
+        this.disabled = false;
+        this.textContent = 'Pay Now';
     });
-    </script>
+});
+</script>
+
 </body>
 </html>
